@@ -1,0 +1,19 @@
+{
+  "name": "depth2d",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "devDependencies": {
+    "jquery": "~2.1.0",
+    "raf.js": "0.0.3"
+  },
+  "dependencies": {
+    "cam3d": "~0.1.0",
+    "klasse": "~1.0.6"
+  }
+}
