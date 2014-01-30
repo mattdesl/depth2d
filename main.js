@@ -33,7 +33,7 @@ var fontSize = 400;
 var shapes = [];
 var fontHeight = fonts.getFaceHeight(face, fontSize);
 
-var mode = 0;
+var mode = 4;
 
 $(window).keydown(function(e) {
     var chr = String.fromCharCode(e.which);
@@ -46,7 +46,7 @@ $(window).keydown(function(e) {
 
 });
 
-setupText('@');
+setupText('i');
 
 function setupText(chr) {
     var steps = 10;
@@ -90,6 +90,8 @@ $(function() {
     //move the camera back and update its matrices
     camera.position.z = 200;
     camera.update();
+
+
 
     //random spherical particles
     var points = createRandomParticles(100, 100);
@@ -155,12 +157,11 @@ $(function() {
         context.strokeStyle = "white";
 
         context.globalAlpha = 1;
+        context.setTransform(1, 0, 0, 1, 0, 0);
         context.drawImage(page1, 0, 0, width, height);
 
-        context.save();
 
-
-        var cameraRadius = (Math.sin(rotation)/2+0.5) * 50 + 100;
+        var cameraRadius = (Math.sin(rotation)/2+0.5) * 50 + 200;
         
         //orbit our camera a little around center 
         var hr = rotation + Math.PI/2;
@@ -168,7 +169,7 @@ $(function() {
         var x = (Math.cos(hr)) * cameraRadius,
             z = (Math.sin(hr)) * cameraRadius;
 
-        camera.position.y = -10;
+        camera.position.y = -100;
         camera.position.x = x;
         camera.position.z = z;
 
@@ -178,12 +179,32 @@ $(function() {
         camera.lookAt(0, 0, 0);
         camera.up.set(0, 1, 0); 
 
+
         //call update() to create the combined matrix
         camera.update();      
+
+
 
         // context.translate(100, 100);
             
         time += 0.0075;
+
+
+
+        context.save();
+        // context.setTransform(1, -0.35, -0.0, 0.25, 0, 200);
+        renderText(cameraRadius, 0, "white");
+
+        context.fillStyle = "black";
+        context.strokeStyle = "black";
+        // renderText(cameraRadius, Math.PI/2, "black", true);
+        
+        context.restore();
+
+        
+    }
+
+    function renderText(cameraRadius, rotX, fill, offset) {
 
         // camera.project(tmp.set(0, 0, 0), tmp);
         // var grd = context.createRadialGradient(tmp.x, tmp.y, 0, tmp.x, tmp.y, cameraRadius);
@@ -202,6 +223,8 @@ $(function() {
 
 
 
+        mat.identity();
+        mat.rotateX(rotX);
 
         for (var i=0; i<shapes.length; i++) {
             var s = shapes[i];
@@ -210,6 +233,7 @@ $(function() {
                 var p = s.points[j];
 
                 tmp.set(p.x * 0.5, (p.y - fontHeight/2) * 0.5, 0);
+                tmp.transformMat4( mat );
 
                 minX = Math.min(minX, tmp.x);
                 minY = Math.min(minY, tmp.y);
@@ -245,10 +269,10 @@ $(function() {
         // sizeOut.y *= 0.75;
 
         // context.drawImage(blob, tmp.x-sizeOut.x/2, tmp.y-sizeOut.y/2, sizeOut.x, sizeOut.y);
-        context.restore();
 
         if (mode > 2)
             context.beginPath();
+
 
         for (var i=0; i<shapes.length; i++) {
             var s = shapes[i];
@@ -256,7 +280,8 @@ $(function() {
             for (var j=0; j<s.points.length; j++) {
                 var p = s.points[j];
 
-                tmp.set(p.x * 0.5, (p.y - fontHeight/2) * 0.5, 0);
+                tmp.set(p.x * 0.5, (p.y - fontHeight/2) * 0.5, 0, 1);
+                tmp.transformMat4( mat );
 
                 minX = Math.min(minX, tmp.x);
                 minY = Math.min(minY, tmp.y);
@@ -353,7 +378,7 @@ $(function() {
         if (pattern && mode === 5)
             context.fillStyle = pattern;
         else
-            context.fillStyle = "white";
+            context.fillStyle = fill;
         if (mode > 2) {
             context.closePath();
             if (mode === 3) {

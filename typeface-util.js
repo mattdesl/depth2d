@@ -44,6 +44,11 @@ module.exports.getFaceHeight = function(face, size) {
     return Math.round(_typeface_js.pixelsFromPoints(face, style, face.lineHeight));
 }
 
+module.exports.getFaceAscent = function(face, size) {
+    style.fontSize = size;
+    return Math.round(_typeface_js.pixelsFromPoints(face, style, face.ascender));   
+}
+
 module.exports.getPointScale = function(face, size) {
     style.fontSize = size; 
     return _typeface_js.pixelsFromPoints(face, style, 1);
