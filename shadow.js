@@ -65,7 +65,7 @@ function createGlyph(chr) {
 
 function setupText(chr) {
     var glyph = createGlyph(chr);
-    glyph.setMorphTarget( lastGlyph );
+    // glyph.setMorphTarget( lastGlyph );
     lastGlyph = glyph;
     return glyph;
 }
@@ -146,6 +146,9 @@ $(function() {
     transform.identity();
     transform.rotateY(0.01);
 
+    var shear = new Matrix4();
+    shear.identity();
+
     function render() {
         requestAnimationFrame(render);
         stats.begin();
@@ -201,7 +204,14 @@ $(function() {
 
         //// draw the glyph...
         if (glyph) {
-            glyph.morph = Math.sin(time*10)/2+0.5;
+            var shearAmt = Math.sin(time*10)/2+0.5;
+
+            // shear.identity();
+            // shear.rotateZ(shearAmt);
+            // // shear.val[1] = shearAmt;
+            // shear.val[4] = shearAmt;
+
+            // glyph.transform = shear;
 
             glyph.update(floor, lightPos);
 

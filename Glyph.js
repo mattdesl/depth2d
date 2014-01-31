@@ -62,6 +62,8 @@ var Glyph = new Class({
 
             this.setup(this.meshes);
         }
+
+        this.shrink = 0;
     },
 
     setup: function(meshes) {
@@ -175,7 +177,12 @@ var Glyph = new Class({
             transformMatrix = this.transform,
             morphTarget = this.morphTarget,
             morphing = !!morphTarget,
-            morphAlpha = this.morph;
+            morphAlpha = this.morph,
+
+            shrink = this.shrink,
+            origin = this.center;
+
+
 
         if (floor)
             util.calculateNormal(floor[0], floor[1], floor[2], nrm);
@@ -194,12 +201,7 @@ var Glyph = new Class({
 
                 //copy original..
                 o.copy(p);
-
-                if (morphing) {
-                    // var mvert = morphVerts[i];
-                    o.lerp(morphVerts[i], morphAlpha);
-                }
-
+                
                 //transform the point from model space to view space
                 o.transformMat4(transformMatrix);
 
