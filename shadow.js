@@ -37,7 +37,11 @@ $(window).keydown(function(e) {
         glyph = setupText(chr);
 });
 
+var lastGlyph = createGlyph('@');
+
 glyph = setupText('F');
+
+
 
 function createGlyph(chr) {
     var steps = 10;
@@ -48,7 +52,7 @@ function createGlyph(chr) {
 
     //simplify the shape to reduce point coint
     for (var i=0; i<shapes.length; i++) {
-        shapes[i] = shapes[i].simplify(10);
+        shapes[i] = shapes[i].simplify(5);
     }  
     
     //now create a 3D glyph from that...
@@ -61,7 +65,8 @@ function createGlyph(chr) {
 
 function setupText(chr) {
     var glyph = createGlyph(chr);
-    // glyph.setMorphTarget( createGlyph('@') );
+    glyph.setMorphTarget( lastGlyph );
+    lastGlyph = glyph;
     return glyph;
 }
 
@@ -196,7 +201,7 @@ $(function() {
 
         //// draw the glyph...
         if (glyph) {
-            glyph.morph = Math.sin(time*2)/2+0.5;
+            glyph.morph = Math.sin(time*10)/2+0.5;
 
             glyph.update(floor, lightPos);
 
@@ -307,24 +312,25 @@ $(function() {
         context.stroke();
     }
 
-    function drawGlyph(glyph, fill, shadow, floorY) {
+    function drawGlyph(glyph, fill, shadow, floorY, ignoreMorphPoints) {
         context.beginPath();
 
-
         //draw mesh itself
-        for (var i=0; i<glyph.paths.length; i++) {
-            var path = glyph.paths[i];
-            var list = shadow ? path.shadow : path.transformed;
+        for (var i=0; i<glyph.transformedData.length; i++) {
+            var data = glyph.transformedData[i];
+            var list = shadow ? data.shadow : data.transformed;
+
+            if (ignoreMorphPoints && i >= glyph.meshes.length)
+                break;
 
             for (var j=0; j<list.length; j++) {
                 var v = list[j];
 
+                if (ignoreMorphPoints && j >= glyph.meshes[i].length)
+                    break;
+
                 tmp.copy(v);
 
-                // if (shadow && tmp.z > 0) {
-                //     tmp.z = 0;
-                // }
-                
                 camera.project(tmp, tmp);
 
                 if (j===0) 
