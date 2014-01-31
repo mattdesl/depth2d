@@ -37,9 +37,9 @@ $(window).keydown(function(e) {
         glyph = setupText(chr);
 });
 
-glyph = setupText('i');
+glyph = setupText('F');
 
-function setupText(chr) {
+function createGlyph(chr) {
     var steps = 10;
     shapes = fonts.getShapeList(face, fontSize, chr, steps);
     if (!shapes) {
@@ -48,16 +48,22 @@ function setupText(chr) {
 
     //simplify the shape to reduce point coint
     for (var i=0; i<shapes.length; i++) {
-        shapes[i] = shapes[i].simplify(5);
+        shapes[i] = shapes[i].simplify(10);
     }  
     
     //now create a 3D glyph from that...
-    var g = new Glyph(shapes, 0);
+    var g = new Glyph(shapes, 0.5);
     g.transform.translate( new Vector3(0, -ascent/2, 0) );
     return g;
 }
 
 
+
+function setupText(chr) {
+    var glyph = createGlyph(chr);
+    // glyph.setMorphTarget( createGlyph('@') );
+    return glyph;
+}
 
 $(function() {
     var width = window.innerWidth,
@@ -104,8 +110,8 @@ $(function() {
     camera.position.z = 200;
     camera.update();
 
-    var rotation = 0,
-        time = 0,
+    var rotation = 100,
+        time = 300,
         tmp = new Vector4();
 
     var unitScale = 100;
@@ -190,6 +196,8 @@ $(function() {
 
         //// draw the glyph...
         if (glyph) {
+            glyph.morph = Math.sin(time*2)/2+0.5;
+
             glyph.update(floor, lightPos);
 
             //draw shadow...
@@ -302,6 +310,7 @@ $(function() {
     function drawGlyph(glyph, fill, shadow, floorY) {
         context.beginPath();
 
+
         //draw mesh itself
         for (var i=0; i<glyph.paths.length; i++) {
             var path = glyph.paths[i];
@@ -322,6 +331,7 @@ $(function() {
                     context.moveTo(tmp.x, tmp.y);
                 else
                     context.lineTo(tmp.x, tmp.y); 
+                // context.fillRect(tmp.x-2.5, tmp.y-2.5, 5, 5);       
             }
         }
         if (fill)

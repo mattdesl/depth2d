@@ -7,48 +7,61 @@ var util = require('./shadowMath');
 var tmp = new Vector3();
 var nrm = new Vector3();
 
+var lerp = require('interpolation').lerp;
+
 /**
  * 
  */
 var Glyph = new Class({
 
-    initialize: function(shapes, fontHeight, scale) {
+    initialize: function(shapes, scale) {
         this.transform = new Matrix4();
 
-        scale = typeof scale === "number" ? scale : 0.5;
-        fontHeight = fontHeight || 0;
+        scale = typeof scale === "number" ? scale : 1.0;
+
 
         this.paths = [];
+        if (shapes) {
+            for (var i=0; i<shapes.length; i++) {
+                var s = shapes[i];
 
-        for (var i=0; i<shapes.length; i++) {
-            var s = shapes[i];
+                var path = {
+                    vertices: new Array(s.points.length),
+                    shadow: new Array(s.points.length),
+                    transformed: new Array(s.points.length)
+                };
 
-            var path = {
-                vertices: new Array(s.points.length),
-                shadow: new Array(s.points.length),
-                transformed: new Array(s.points.length)
-            };
+                for (var j=0; j<s.points.length; j++) {
+                    var p = s.points[j];
 
-            for (var j=0; j<s.points.length; j++) {
-                var p = s.points[j];
+                    path.vertices[j] = new Vector3(p.x * scale, p.y * scale, 0);
+                    
+                    //represents the original vertex, transformed into view-space
+                    path.transformed[j] = new Vector3();
 
+                    //projects the transformed vertex onto a floor plane
+                    path.shadow[j] = new Vector3();
+                }
 
-                path.vertices[j] = new Vector3(p.x * scale, (p.y - fontHeight) * scale, 0);
-                path.shadow[j] = new Vector3();
-                path.transformed[j] = new Vector3();
+                this.paths.push(path);
             }
-
-            this.paths.push(path);
         }
+
+        this._morphTarget = null;
     },
 
     //This transforms the model-space vertices into view-space
     update: function(floor, light) {
         var paths = this.paths,
-            transformMatrix = this.transform;
+            transformMatrix = this.transform,
+            morphing = !!this.morphTarget,
+            morphTarget = this.morphTarget,
+            morph = this.morph,
+            morphPaths = this.morphPaths;
 
         if (floor)
             util.calculateNormal(floor[0], floor[1], floor[2], nrm);
+
 
         for (var j=0; j<paths.length; j++) {
             var path = paths[j];
@@ -61,25 +74,23 @@ var Glyph = new Class({
                 var p = vertices[i];
                 var o = transformed[i];
 
-                //transform from model space to view space
-                o.copy(p).transformMat4(transformMatrix);
+                //copy original..
+                o.copy(p);
+
+                //transform the point from model space to view space
+                o.transformMat4(transformMatrix);
 
                 //if we have a floor and light we can project it too...
                 if (floor && light) {
-
-
                     //store the result in the shadow vertex
                     if (o.y > floor[0].y)
                         shadow[i].copy(o);
                     else   
                         util.calculateProjection( floor[0], o, nrm, light, shadow[i] );
-
-
                 }
             }
-        }
-            
-    }, 
+        }     
+    },
 });
 
 module.exports = Glyph;
