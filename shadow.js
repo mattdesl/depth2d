@@ -16,59 +16,31 @@ var shadowMath = require('./shadowMath');
 
 require('./typeface');
 require('./optimer');
+require('./canter_bold.typeface');
+
 var fonts = require('./typeface-util');
+var Text3D = require('./Text3D');
 
 //console.log(fonts.getFace('optimer', 'bold'));
 
-var face = fonts.getFace('optimer', 'bold');
-var fontSize = 400;
-var glyph = null;
-var fontHeight = fonts.getFaceHeight(face, fontSize);
-var ascent = fonts.getFaceAscent(face, fontSize);
+var face = fonts.getFace('canter');
+var fontSize = 150;
+var text = new Text3D('WORK', face, fontSize);
+// var fontHeight = fonts.getFaceHeight(face, fontSize);
+// var ascent = fonts.getFaceAscent(face, fontSize);
 
 var mode = 4;
 
 $(window).keydown(function(e) {
     var chr = String.fromCharCode(e.which);
-    console.log(e.which);
+    // console.log(e.which);
     // if (chr && e.which >= 33 && e.which <= 122)
     var x = e.which;
-    if(chr && ((x>32&&x<91)||(x>96&&x<123)||(x>127&&x<155)||(x>159&&x<166)))
-        glyph = setupText(chr);
+    if(chr && ((x>32&&x<91)||(x>96&&x<123)||(x>127&&x<155)||(x>159&&x<166))) {
+        text.setText(chr.toLowerCase());
+    }
 });
 
-var lastGlyph = createGlyph('@');
-
-glyph = setupText('F');
-
-
-
-function createGlyph(chr) {
-    var steps = 10;
-    shapes = fonts.getShapeList(face, fontSize, chr, steps);
-    if (!shapes) {
-        shapes = fonts.getShapeList(face, fontSize, '?', steps) || [];
-    }
-
-    //simplify the shape to reduce point coint
-    for (var i=0; i<shapes.length; i++) {
-        shapes[i] = shapes[i].simplify(5);
-    }  
-    
-    //now create a 3D glyph from that...
-    var g = new Glyph(shapes, 0.5);
-    g.transform.translate( new Vector3(0, -ascent/2, 0) );
-    return g;
-}
-
-
-
-function setupText(chr) {
-    var glyph = createGlyph(chr);
-    // glyph.setMorphTarget( lastGlyph );
-    lastGlyph = glyph;
-    return glyph;
-}
 
 $(function() {
     var width = window.innerWidth,
@@ -96,7 +68,7 @@ $(function() {
 
     $('body').css({
         margin: 0,
-        background: 'gray'
+        background: '#24a2b5'
     });
 
     var canvas = $('<canvas>').appendTo( $('body') );
@@ -149,7 +121,19 @@ $(function() {
     var shear = new Matrix4();
     shear.identity();
 
-    function render() {
+    var now = Date.now(),
+        then = Date.now();
+
+    var patImg = new Image();
+    patImg.src = "img/pattern.png";
+
+    function render(ms) {
+
+        now = ms || Date.now();
+        var dt = (now - then)/10;
+        dt = 1;
+        then = now;
+
         requestAnimationFrame(render);
         stats.begin();
 
@@ -171,7 +155,7 @@ $(function() {
         camera.position.x = x;
         camera.position.z = z;
 
-        rotation += 0.0025;
+        rotation += dt * 0.0025;
 
         //keep the camera looking at centre of world
         camera.lookAt(0, 0, 0);
@@ -180,7 +164,7 @@ $(function() {
         //call update() to create the combined matrix
         camera.update();      
             
-        time += 0.0075;
+        time += dt * 0.0075;
 
         
 
@@ -195,43 +179,27 @@ $(function() {
             
         context.globalAlpha = 1;
 
-
         var planeNormal = shadowMath.calculateNormal(floor[0], floor[1], floor[2]);
         // var planeNormal = new Vector3(0, -1, 0);
 
         context.strokeStyle = "red";
+        context.fillStyle = "red";
         lineFromOrigin(planeNormal, unitScale/2);
 
-        //// draw the glyph...
-        if (glyph) {
-            var shearAmt = Math.sin(time*10)/2+0.5;
 
-            // shear.identity();
-            // shear.rotateZ(shearAmt);
-            // // shear.val[1] = shearAmt;
-            // shear.val[4] = shearAmt;
+        for (var i=0; i<text.glyphs.length; i++)
+            text.glyphs[i].deform = 1-(Math.sin(time) /2 +0.5);
 
-            // glyph.transform = shear;
+        text.update(floor, lightPos);
 
-            glyph.update(floor, lightPos);
+        context.fillStyle = 'black';
+        context.globalAlpha = 0.3;
+        text.fillShadow(context, camera);
 
-            //draw shadow...
-            context.fillStyle = "black";
-            context.globalAlpha = 0.25;
-
-            camera.project(tmp.set(0, 0, 0), tmp);
-            var grd = context.createRadialGradient(tmp.x, tmp.y, 0, tmp.x, tmp.y, fontSize*0.4);
-            grd.addColorStop(0, 'black');
-            grd.addColorStop(1, 'rgba(0,0,0,0.0)');
-            context.fillStyle = grd;
-
-
-            drawGlyph(glyph, true, true, 0);
-
-            context.fillStyle = "white";
-            context.globalAlpha = 1;
-            drawGlyph(glyph, true);
-        }
+        context.globalAlpha = 1;
+        context.fillStyle = '#bebebe';
+        text.fill(context, camera);
+        // text.drawTriangles(context, camera);
 
         //light
         context.fillStyle = "yellow";
@@ -239,77 +207,6 @@ $(function() {
         context.fillRect(tmp.x-5, tmp.y-5, 10, 10);
 
         stats.end(statEl[0]);
-    }
-
-
-
-    function render2() {
-        requestAnimationFrame(render);
-        stats.begin();
-
-        context.clearRect(0, 0, width, height);
-        context.fillStyle = "white";
-        context.strokeStyle = "white";
-
-        context.globalAlpha = 1;
-        // context.setTransform(1, 0, 0, 1, 0, 0);
-
-        var cameraRadius = (Math.sin(rotation)/2+0.5) * 50 + unitScale*2;
-        
-        //orbit our camera a little around center 
-        var hr = rotation + Math.PI/2;
-
-        var x = (Math.cos(hr)) * cameraRadius,
-            z = (Math.sin(hr)) * cameraRadius;
-
-        camera.position.y = -100;
-        camera.position.x = x;
-        camera.position.z = z;
-
-        rotation += 0.01;
-
-        //keep the camera looking at centre of world
-        camera.lookAt(0, 0, 0);
-        camera.up.set(0, 1, 0); 
-
-        //call update() to create the combined matrix
-        camera.update();      
-            
-        time += 0.0075;
-
-        
-
-
-        lightPos.transformMat4(transform);
-        lightPos.y = ((Math.sin(time)/2+0.5) * -50) - 60;
-
-        context.fillRect(0, 0, 100, 100);
-        drawMesh(floor, false, true);
-
-        //light
-        context.fillStyle = "yellow";
-        camera.project(lightPos, tmp);
-        context.fillRect(tmp.x-5, tmp.y-5, 10, 10);
-
-        var planeNormal = getPlaneNormal(floor[0], floor[1], floor[2]);
-        // var planeNormal = new Vector3(0, -1, 0);
-
-        context.strokeStyle = "red";
-        lineFromOrigin(planeNormal, unitScale/2);
-
-        projectedMesh[0] = calculateProjection(floor[1], mesh[0], planeNormal, lightPos);
-        projectedMesh[1] = calculateProjection(floor[1], mesh[1], planeNormal, lightPos);
-        projectedMesh[2] = calculateProjection(floor[1], mesh[2], planeNormal, lightPos);
-        
-        context.fillStyle = "black";
-        context.globalAlpha = 0.25;
-        drawMesh(projectedMesh, true, true);
-
-
-        context.fillStyle = "white";
-        context.strokeStyle = "white";
-        context.globalAlpha = 1.0;
-        drawMesh(mesh, true, true);       
     }
 
     function lineFromOrigin(pos, scale) {
@@ -320,40 +217,6 @@ $(function() {
         camera.project( tmp.set(pos).scale(scale), tmp );
         context.lineTo(tmp.x, tmp.y);
         context.stroke();
-    }
-
-    function drawGlyph(glyph, fill, shadow, floorY, ignoreMorphPoints) {
-        context.beginPath();
-
-        //draw mesh itself
-        for (var i=0; i<glyph.transformedData.length; i++) {
-            var data = glyph.transformedData[i];
-            var list = shadow ? data.shadow : data.transformed;
-
-            if (ignoreMorphPoints && i >= glyph.meshes.length)
-                break;
-
-            for (var j=0; j<list.length; j++) {
-                var v = list[j];
-
-                if (ignoreMorphPoints && j >= glyph.meshes[i].length)
-                    break;
-
-                tmp.copy(v);
-
-                camera.project(tmp, tmp);
-
-                if (j===0) 
-                    context.moveTo(tmp.x, tmp.y);
-                else
-                    context.lineTo(tmp.x, tmp.y); 
-                // context.fillRect(tmp.x-2.5, tmp.y-2.5, 5, 5);       
-            }
-        }
-        if (fill)
-            context.fill();
-        else
-            context.stroke();
     }
 
     function drawMesh(mesh, fill, close) {

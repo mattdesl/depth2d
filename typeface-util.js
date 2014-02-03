@@ -54,21 +54,24 @@ module.exports.getPointScale = function(face, size) {
     return _typeface_js.pixelsFromPoints(face, style, 1);
 };
 
+module.exports.getGlyphMetrics = function(face, size, chr) {
+    var g = face.glyphs[chr];
+    if (!g || !g.o)
+        return null;
+    var pointScale = module.exports.getPointScale(face, size);
+    return {
+        xadvance: (g.ha) ? g.ha * pointScale : 0,
+        height: module.exports.getFaceHeight(face, size),
+        ascent: module.exports.getFaceAscent(face, size)
+    };
+};
+
 function scaleAndOffset(shape, scale, offset) {
     var p = shape.points;
     for (var i=0; i<p.length; i++) {
         p[i].x = p[i].x * scale.x + offset.x;
         p[i].y = p[i].y * scale.y + offset.y;
     }
-}
-
-
-function isClockwise(points) {
-    var sum = 0;
-    for (var i=0; i<points.length-1; i++) {
-        sum += (points[i+1].x - points[i].x) * (points[i+1].y + points[i].y);
-    }
-    return sum > 0;
 }
 
 function getShapeList(face, size, chr, steps) {
@@ -130,61 +133,6 @@ function getShapeList(face, size, chr, steps) {
     shapes.push(shape);
     return shapes;
 }
-
-//// TODO: this needs to be cleaned up. but in many cases it will never get used..
-module.exports.getGlyph = function(face, size, chr, steps) {
-    var shapes = getShapeList(face, size, chr, steps);
-
-    var poly = { 
-        holes: [], 
-        contour: null
-    };
-
-    var fontShape = {
-        polygons: [],
-        xadvance: 0,
-        lineHeight: 0
-    }
-
-    var windingClockwise = false;
-    for (var j=0; j<shapes.length; j++) {
-        var s = shapes[j];
-        var points = s.points;
-        
-        //assume the first winding order is different for holes...
-        if (j==0) {
-            windingClockwise = isClockwise(points);
-
-            poly.contour = s;
-        } 
-        else {
-            var clock = isClockwise(points);
-
-            //found a hole
-            if (windingClockwise !== clock) {
-                poly.holes.push( s );
-            } 
-            //not a hole, so it must be a new shape.
-            //add our last shape to the list
-            else {
-                fontShape.polygons.push( poly );
-                poly = { contour: s, holes: [] };
-            }
-        }
-    }
-
-    //if we had at least 1 shape...
-    if (j>0)
-        fontShape.polygons.push( poly );
-
-
-    var glyph = face.glyphs[char];
-
-    var pointScale = module.exports.getPointScale(face, fontSize);
-    fontShape.xadvance = (glyph && glyph.ha) ? glyph.ha * pointScale : 0;
-    fontShape.lineHeight = module.exports.getFaceHeight(face, fontSize);
-    return fontShape;
-};
 
 
 module.exports.getShapeList = getShapeList;
