@@ -11,23 +11,29 @@ var Matrix4 = require('vecmath').Matrix4;
 var stackblur = require('stackblur').createBlurredCanvas;
 var stats = require('stats');
 
-var Glyph = require('./Glyph');
-var shadowMath = require('./shadowMath');
+var Glyph = require('./lib/text/Glyph');
+var shadowMath = require('./lib/shadowMath');
 
 require('./typeface');
 require('./optimer');
 require('./canter_bold.typeface');
 
-var fonts = require('./typeface-util');
-var Text3D = require('./Text3D');
+var fonts = require('./lib/text/typeface-util');
+var Text3D = require('./lib/text/Text3D');
 
 //console.log(fonts.getFace('optimer', 'bold'));
 
 var face = fonts.getFace('canter');
 var fontSize = 150;
-var text = new Text3D('WORK', face, fontSize);
+
+var str = 'FLOCK'
+var text = new Text3D(str, face, fontSize);
 // var fontHeight = fonts.getFaceHeight(face, fontSize);
 // var ascent = fonts.getFaceAscent(face, fontSize);
+
+var tweenObj = {
+    alpha: 0
+};
 
 var mode = 4;
 
@@ -36,7 +42,28 @@ $(window).keydown(function(e) {
     // console.log(e.which);
     // if (chr && e.which >= 33 && e.which <= 122)
     var x = e.which;
-    if(chr && ((x>32&&x<91)||(x>96&&x<123)||(x>127&&x<155)||(x>159&&x<166))) {
+
+    if (e.which === 32) {
+        e.preventDefault();
+
+        text.setText(str);
+        console.log(tweenObj)
+        TweenLite.killTweensOf(tweenObj);
+        tweenObj.alpha = 0.0;
+        var dur = 4;
+        TweenLite.to(tweenObj, dur, {
+            alpha: 1.0,
+            override: 1,
+            ease: Strong.easeOut
+        });
+        TweenLite.to(tweenObj, dur, {
+            alpha: 0.0,
+            delay: dur,
+            override: 1,
+            ease: Strong.easeOut
+        });
+    }
+    else if(chr && ((x>32&&x<91)||(x>96&&x<123)||(x>127&&x<155)||(x>159&&x<166))) {
         text.setText(chr.toLowerCase());
     }
 });
@@ -127,6 +154,9 @@ $(function() {
     var patImg = new Image();
     patImg.src = "img/pattern.png";
 
+
+    
+
     function render(ms) {
 
         now = ms || Date.now();
@@ -184,11 +214,12 @@ $(function() {
 
         context.strokeStyle = "red";
         context.fillStyle = "red";
-        lineFromOrigin(planeNormal, unitScale/2);
+        // lineFromOrigin(planeNormal, unitScale/2);
 
 
         for (var i=0; i<text.glyphs.length; i++)
-            text.glyphs[i].deform = 1-(Math.sin(time) /2 +0.5);
+            text.glyphs[i].deform = tweenObj.alpha;
+            // text.glyphs[i].deform = (Math.sin(time) /2 +0.5);
 
         text.update(floor, lightPos);
 
@@ -199,15 +230,19 @@ $(function() {
         context.globalAlpha = 1;
         context.fillStyle = '#bebebe';
         text.fill(context, camera);
+
+        // context.strokeStyle = "rgba(0,0,0,0.40)";
         // text.drawTriangles(context, camera);
 
         //light
         context.fillStyle = "yellow";
         camera.project(lightPos, tmp);
-        context.fillRect(tmp.x-5, tmp.y-5, 10, 10);
+        // context.fillRect(tmp.x-5, tmp.y-5, 10, 10);
 
         stats.end(statEl[0]);
     }
+
+
 
     function lineFromOrigin(pos, scale) {
         camera.project(tmp.set(0,0,0), tmp);
