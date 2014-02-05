@@ -26,7 +26,7 @@ var Text3D = require('./lib/text/Text3D');
 var face = fonts.getFace('canter');
 var fontSize = 150;
 
-var str = 'FLOCK'
+var str = 'CRACK'
 var text = new Text3D(str, face, fontSize);
 // var fontHeight = fonts.getFaceHeight(face, fontSize);
 // var ascent = fonts.getFaceAscent(face, fontSize);
@@ -43,7 +43,12 @@ $(window).keydown(function(e) {
     // if (chr && e.which >= 33 && e.which <= 122)
     var x = e.which;
 
-    if (e.which === 32) {
+    if (e.which === 13) {
+        e.preventDefault();
+
+        tweenObj.alpha = 0.51;
+    }
+    else if (e.which === 32) {
         e.preventDefault();
 
         text.setText(str);
